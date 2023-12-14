@@ -147,10 +147,6 @@ pub const MouseStatus = enum(c_int) {
     _,
 };
 pub const XPLMHandleMouseClick_f = ?*const fn (WindowID, c_int, c_int, MouseStatus, ?*anyopaque) callconv(.C) c_int;
-pub const xplm_CursorDefault: c_int = 0;
-pub const xplm_CursorHidden: c_int = 1;
-pub const xplm_CursorArrow: c_int = 2;
-pub const xplm_CursorCustom: c_int = 3;
 pub const CursorStatus = enum(c_int) {
     default = 0,
     hidden = 1,
@@ -160,10 +156,6 @@ pub const CursorStatus = enum(c_int) {
 };
 pub const XPLMHandleCursor_f = ?*const fn (WindowID, c_int, c_int, ?*anyopaque) callconv(.C) CursorStatus;
 pub const XPLMHandleMouseWheel_f = ?*const fn (WindowID, c_int, c_int, c_int, c_int, ?*anyopaque) callconv(.C) c_int;
-pub const xplm_WindowLayerFlightOverlay: c_int = 0;
-pub const xplm_WindowLayerFloatingWindows: c_int = 1;
-pub const xplm_WindowLayerModal: c_int = 2;
-pub const xplm_WindowLayerGrowlNotifications: c_int = 3;
 pub const WindowLayer = enum(c_int) {
     flight_overlay = 0,
     floating_windows = 1,
@@ -171,11 +163,13 @@ pub const WindowLayer = enum(c_int) {
     growl_notifications = 3,
     _,
 };
-pub const xplm_WindowDecorationNone: c_int = 0;
-pub const xplm_WindowDecorationRoundRectangle: c_int = 1;
-pub const xplm_WindowDecorationSelfDecorated: c_int = 2;
-pub const xplm_WindowDecorationSelfDecoratedResizable: c_int = 3;
-pub const XPLMWindowDecoration = c_int;
+pub const WindowDecoration = enum(c_int) {
+    none = 0,
+    round_rectangle = 1,
+    self_decorated = 2,
+    self_decorated_resizable = 3,
+    _,
+};
 pub const XPLMCreateWindow_t = extern struct {
     structSize: c_int = std.mem.zeroes(c_int),
     left: c_int = std.mem.zeroes(c_int),
@@ -189,7 +183,7 @@ pub const XPLMCreateWindow_t = extern struct {
     handleCursorFunc: XPLMHandleCursor_f = std.mem.zeroes(XPLMHandleCursor_f),
     handleMouseWheelFunc: XPLMHandleMouseWheel_f = std.mem.zeroes(XPLMHandleMouseWheel_f),
     refcon: ?*anyopaque = std.mem.zeroes(?*anyopaque),
-    decorateAsFloatingWindow: XPLMWindowDecoration = std.mem.zeroes(XPLMWindowDecoration),
+    decorateAsFloatingWindow: WindowDecoration = std.mem.zeroes(WindowDecoration),
     layer: WindowLayer = std.mem.zeroes(WindowLayer),
     handleRightClickFunc: XPLMHandleMouseClick_f = std.mem.zeroes(XPLMHandleMouseClick_f),
 };
@@ -233,38 +227,46 @@ pub extern fn XPLMTakeKeyboardFocus(inWindow: WindowID) void;
 pub extern fn XPLMHasKeyboardFocus(inWindow: WindowID) c_int;
 pub extern fn XPLMBringWindowToFront(inWindow: WindowID) void;
 pub extern fn XPLMIsWindowInFront(inWindow: WindowID) c_int;
-pub const XPLMKeySniffer_f = ?*const fn (u8, KeyFlags, u8, ?*anyopaque) callconv(.C) c_int;
-pub extern fn XPLMRegisterKeySniffer(inCallback: XPLMKeySniffer_f, inBeforeWindows: c_int, inRefcon: ?*anyopaque) c_int;
-pub extern fn XPLMUnregisterKeySniffer(inCallback: XPLMKeySniffer_f, inBeforeWindows: c_int, inRefcon: ?*anyopaque) c_int;
-pub const XPLMHotKey_f = ?*const fn (?*anyopaque) callconv(.C) void;
+pub const KeySnifferCallback = ?*const fn (u8, KeyFlags, u8, ?*anyopaque) callconv(.C) c_int;
+pub extern fn XPLMRegisterKeySniffer(inCallback: KeySnifferCallback, inBeforeWindows: c_int, inRefcon: ?*anyopaque) c_int;
+pub extern fn XPLMUnregisterKeySniffer(inCallback: KeySnifferCallback, inBeforeWindows: c_int, inRefcon: ?*anyopaque) c_int;
+pub const HotKeyCallback = ?*const fn (?*anyopaque) callconv(.C) void;
 pub const XPLMHotKeyID = ?*anyopaque;
-pub extern fn XPLMRegisterHotKey(inVirtualKey: u8, inFlags: KeyFlags, inDescription: [*c]const u8, inCallback: XPLMHotKey_f, inRefcon: ?*anyopaque) XPLMHotKeyID;
+pub extern fn XPLMRegisterHotKey(inVirtualKey: u8, inFlags: KeyFlags, inDescription: [*c]const u8, inCallback: HotKeyCallback, inRefcon: ?*anyopaque) XPLMHotKeyID;
 pub extern fn XPLMUnregisterHotKey(inHotKey: XPLMHotKeyID) void;
 pub extern fn XPLMCountHotKeys() c_int;
 pub extern fn XPLMGetNthHotKey(inIndex: c_int) XPLMHotKeyID;
 pub extern fn XPLMGetHotKeyInfo(inHotKey: XPLMHotKeyID, outVirtualKey: [*c]u8, outFlags: [*c]KeyFlags, outDescription: [*c]u8, outPlugin: [*c]PluginID) void;
 pub extern fn XPLMSetHotKeyCombination(inHotKey: XPLMHotKeyID, inVirtualKey: u8, inFlags: KeyFlags) void;
-pub const xplm_Tex_GeneralInterface: c_int = 0;
-pub const XPLMTextureID = c_int;
+pub const TextureID = enum(c_int) {
+    general_interface = 0,
+    _,
+};
 pub extern fn XPLMSetGraphicsState(inEnableFog: c_int, inNumberTexUnits: c_int, inEnableLighting: c_int, inEnableAlphaTesting: c_int, inEnableAlphaBlending: c_int, inEnableDepthTesting: c_int, inEnableDepthWriting: c_int) void;
 pub extern fn XPLMBindTexture2d(inTextureNum: c_int, inTextureUnit: c_int) void;
 pub extern fn XPLMGenerateTextureNumbers(outTextureIDs: [*c]c_int, inCount: c_int) void;
 pub extern fn XPLMWorldToLocal(inLatitude: f64, inLongitude: f64, inAltitude: f64, outX: [*c]f64, outY: [*c]f64, outZ: [*c]f64) void;
 pub extern fn XPLMLocalToWorld(inX: f64, inY: f64, inZ: f64, outLatitude: [*c]f64, outLongitude: [*c]f64, outAltitude: [*c]f64) void;
 pub extern fn XPLMDrawTranslucentDarkBox(inLeft: c_int, inTop: c_int, inRight: c_int, inBottom: c_int) void;
-pub const xplmFont_Basic: c_int = 0;
-pub const xplmFont_Proportional: c_int = 18;
-pub const XPLMFontID = c_int;
-pub extern fn XPLMDrawString(inColorRGB: [*c]f32, inXOffset: c_int, inYOffset: c_int, inChar: [*c]u8, inWordWrapWidth: [*c]c_int, inFontID: XPLMFontID) void;
-pub extern fn XPLMDrawNumber(inColorRGB: [*c]f32, inXOffset: c_int, inYOffset: c_int, inValue: f64, inDigits: c_int, inDecimals: c_int, inShowSign: c_int, inFontID: XPLMFontID) void;
-pub extern fn XPLMGetFontDimensions(inFontID: XPLMFontID, outCharWidth: [*c]c_int, outCharHeight: [*c]c_int, outDigitsOnly: [*c]c_int) void;
-pub extern fn XPLMMeasureString(inFontID: XPLMFontID, inChar: [*c]const u8, inNumChars: c_int) f32;
-pub const xplm_ProbeY: c_int = 0;
-pub const XPLMProbeType = c_int;
-pub const xplm_ProbeHitTerrain: c_int = 0;
-pub const xplm_ProbeError: c_int = 1;
-pub const xplm_ProbeMissed: c_int = 2;
-pub const XPLMProbeResult = c_int;
+pub const FontID = enum(c_int) {
+    basic = 0,
+    proportional = 18,
+    _,
+};
+pub extern fn XPLMDrawString(inColorRGB: [*c]f32, inXOffset: c_int, inYOffset: c_int, inChar: [*c]u8, inWordWrapWidth: [*c]c_int, inFontID: FontID) void;
+pub extern fn XPLMDrawNumber(inColorRGB: [*c]f32, inXOffset: c_int, inYOffset: c_int, inValue: f64, inDigits: c_int, inDecimals: c_int, inShowSign: c_int, inFontID: FontID) void;
+pub extern fn XPLMGetFontDimensions(inFontID: FontID, outCharWidth: [*c]c_int, outCharHeight: [*c]c_int, outDigitsOnly: [*c]c_int) void;
+pub extern fn XPLMMeasureString(inFontID: FontID, inChar: [*c]const u8, inNumChars: c_int) f32;
+pub const SceneryProbeType = enum(c_int) {
+    y = 0,
+    _,
+};
+pub const ProbeResult = enum(c_int) {
+    hit_terrain = 0,
+    err = 1,
+    missed = 2,
+    _,
+};
 pub const SceneryProbeHandle = ?*anyopaque;
 pub const XPLMProbeInfo_t = extern struct {
     structSize: c_int = std.mem.zeroes(c_int),
@@ -279,9 +281,9 @@ pub const XPLMProbeInfo_t = extern struct {
     velocityZ: f32 = std.mem.zeroes(f32),
     is_wet: c_int = std.mem.zeroes(c_int),
 };
-pub extern fn XPLMCreateProbe(inProbeType: XPLMProbeType) SceneryProbeHandle;
+pub extern fn XPLMCreateProbe(inProbeType: SceneryProbeType) SceneryProbeHandle;
 pub extern fn XPLMDestroyProbe(inProbe: SceneryProbeHandle) void;
-pub extern fn XPLMProbeTerrainXYZ(inProbe: SceneryProbeHandle, inX: f32, inY: f32, inZ: f32, outInfo: [*c]XPLMProbeInfo_t) XPLMProbeResult;
+pub extern fn XPLMProbeTerrainXYZ(inProbe: SceneryProbeHandle, inX: f32, inY: f32, inZ: f32, outInfo: [*c]XPLMProbeInfo_t) ProbeResult;
 pub extern fn XPLMGetMagneticVariation(latitude: f64, longitude: f64) f32;
 pub extern fn XPLMDegTrueToDegMagnetic(headingDegreesTrue: f32) f32;
 pub extern fn XPLMDegMagneticToDegTrue(headingDegreesMagnetic: f32) f32;
@@ -372,17 +374,6 @@ pub const HostApplicationID = enum(c_int) {
     xplane = 1,
     _,
 };
-pub const xplm_Language_Unknown: c_int = 0;
-pub const xplm_Language_English: c_int = 1;
-pub const xplm_Language_French: c_int = 2;
-pub const xplm_Language_German: c_int = 3;
-pub const xplm_Language_Italian: c_int = 4;
-pub const xplm_Language_Spanish: c_int = 5;
-pub const xplm_Language_Korean: c_int = 6;
-pub const xplm_Language_Russian: c_int = 7;
-pub const xplm_Language_Greek: c_int = 8;
-pub const xplm_Language_Japanese: c_int = 9;
-pub const xplm_Language_Chinese: c_int = 10;
 pub const LanguageCode = enum(c_int) {
     unknown = 0,
     english = 1,
@@ -420,10 +411,6 @@ pub extern fn XPLMCommandEnd(inCommand: CommandHandle) void;
 pub extern fn XPLMCommandOnce(inCommand: CommandHandle) void;
 pub extern fn XPLMCreateCommand(inName: [*c]const u8, inDescription: [*c]const u8) CommandHandle;
 pub extern fn XPLMRegisterCommandHandler(inComand: CommandHandle, inHandler: CommandCallback, inBefore: c_int, inRefcon: ?*anyopaque) void;
-pub extern fn XPLMUnregisterCommandHandler(inComand: CommandHandle, inHandler: CommandCallback, inBefore: c_int, inRefcon: ?*anyopaque) void;
-pub const xplm_Menu_NoCheck: c_int = 0;
-pub const xplm_Menu_Unchecked: c_int = 1;
-pub const xplm_Menu_Checked: c_int = 2;
 pub const MenuCheck = enum(c_int) {
     no_check = 0,
     unchecked = 1,
@@ -445,20 +432,20 @@ pub extern fn XPLMCheckMenuItem(inMenu: MenuID, index: c_int, inCheck: MenuCheck
 pub extern fn XPLMCheckMenuItemState(inMenu: MenuID, index: c_int, outCheck: [*c]MenuCheck) void;
 pub extern fn XPLMEnableMenuItem(inMenu: MenuID, index: c_int, enabled: c_int) void;
 pub extern fn XPLMRemoveMenuItem(inMenu: MenuID, inIndex: c_int) void;
-pub const xplm_Nav_Unknown: c_int = 0;
-pub const xplm_Nav_Airport: c_int = 1;
-pub const xplm_Nav_NDB: c_int = 2;
-pub const xplm_Nav_VOR: c_int = 4;
-pub const xplm_Nav_ILS: c_int = 8;
-pub const xplm_Nav_Localizer: c_int = 16;
-pub const xplm_Nav_GlideSlope: c_int = 32;
-pub const xplm_Nav_OuterMarker: c_int = 64;
-pub const xplm_Nav_MiddleMarker: c_int = 128;
-pub const xplm_Nav_InnerMarker: c_int = 256;
-pub const xplm_Nav_Fix: c_int = 512;
-pub const xplm_Nav_DME: c_int = 1024;
-pub const xplm_Nav_LatLon: c_int = 2048;
-pub const NavaidType = packed struct(c_int) { airport: bool, ndb: bool, vor: bool, ils: bool, localizer: bool, glideslope: bool, outer_marker: bool, middle_marker: bool, inner_marker: bool, fix: bool, dme: bool, lat_lon: bool };
+pub const NavaidType = packed struct(c_int) {
+    airport: bool,
+    ndb: bool,
+    vor: bool,
+    ils: bool,
+    localizer: bool,
+    glideslope: bool,
+    outer_marker: bool,
+    middle_marker: bool,
+    inner_marker: bool,
+    fix: bool,
+    dme: bool,
+    lat_lon: bool,
+};
 pub const NavaidHandle = c_int;
 pub extern fn XPLMGetFirstNavAid() NavaidHandle;
 pub extern fn XPLMGetNextNavAid(inNavAidRef: NavaidHandle) NavaidHandle;
